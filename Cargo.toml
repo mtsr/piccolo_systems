@@ -1,0 +1,9 @@
+[package]
+name = "piccolo_systems"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.15.0-rc.3", features = ["reflect_functions", "file_watcher"] }
+piccolo = { git = "https://github.com/kyren/piccolo" }
+thiserror = "2.0"
