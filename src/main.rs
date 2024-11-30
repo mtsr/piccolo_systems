@@ -59,15 +59,6 @@ fn update_lua_systems(world: &mut World) {
                         println!("Added: {:?}", file);
 
                         systems.push(file.clone());
-
-                        let executor = lua_vm
-                            .lua
-                            .try_enter(|ctx| {
-                                let closure = Closure::load(ctx, None, file.bytes.as_slice())?;
-                                Ok(ctx.stash(Executor::start(ctx, closure.into(), ())))
-                            })
-                            .unwrap();
-                        lua_vm.lua.execute::<()>(&executor).unwrap();
                     }
                 }
                 AssetEvent::Modified { id } => {
@@ -96,15 +87,28 @@ fn update_lua_systems(world: &mut World) {
     };
 
     let systems = systems
-        .iter()
+        .into_iter()
         .map(|system| {
             println!("System: {:?}", system);
-            (DynParamBuilder::new(ParamBuilder::query::<&Camera>()),)
+            let bytes = system.bytes.clone();
+
+            (
+                ParamBuilder::of::<NonSendMut<LuaVm>>(),
+                // DynParamBuilder::new(ParamBuilder::query::<&Camera>()),
+            )
                 // ()
                 .build_state(world)
-                .build_system(|camera| {
+                .build_system(move |mut lua_vm| {
                     // .build_system(|| {
-                    println!("Hello from dynamic system");
+                    // println!("Hello from dynamic system");
+                    let executor = lua_vm
+                        .lua
+                        .try_enter(|ctx| {
+                            let closure = Closure::load(ctx, None, bytes.as_slice())?;
+                            Ok(ctx.stash(Executor::start(ctx, closure.into(), ())))
+                        })
+                        .unwrap();
+                    lua_vm.lua.execute::<()>(&executor).unwrap();
                 })
         })
         .collect::<Vec<_>>();
