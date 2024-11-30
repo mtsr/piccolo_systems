@@ -1,6 +1,6 @@
 use bevy::{
-    asset::{io::Reader, AssetLoader, AssetPath, LoadContext},
-    ecs::system::{DynParamBuilder, DynSystemParam, ParamBuilder, SystemState},
+    asset::{io::Reader, AssetLoader, LoadContext},
+    ecs::system::{ParamBuilder, SystemState},
     prelude::*,
     utils::{HashMap, HashSet},
 };
@@ -52,43 +52,28 @@ fn update_lua_systems(world: &mut World) {
         let mut systems: HashSet<AssetId<LuaFile>> = HashSet::new();
 
         // Use system state to access all required resources
-        let mut system_state: SystemState<(
-            EventReader<AssetEvent<LuaFile>>,
-            ResMut<Assets<LuaFile>>,
-            NonSendMut<LuaVm>,
-            ResMut<Schedules>,
-        )> = SystemState::new(world);
+        let mut system_state: SystemState<(EventReader<AssetEvent<LuaFile>>,)> =
+            SystemState::new(world);
 
-        let (mut asset_events, lua_files, mut lua_vm, mut schedules) = system_state.get_mut(world);
+        let (mut asset_events,) = system_state.get_mut(world);
 
         for event in asset_events.read() {
             match event {
                 AssetEvent::Added { id } => {
-                    if let Some(file) = lua_files.get(*id) {
-                        println!("Added: {:?}", file);
-
-                        systems.insert(id.clone());
-                    }
+                    println!("Added: {:?}", id);
+                    systems.insert(*id);
                 }
                 AssetEvent::Modified { id } => {
-                    if let Some(file) = lua_files.get(*id) {
-                        println!("Modified: {:?}", file);
-                    }
+                    println!("Modified: {:?}", id);
                 }
                 AssetEvent::Removed { id } => {
-                    if let Some(file) = lua_files.get(*id) {
-                        println!("Removed: {:?}", file);
-                    }
+                    println!("Removed: {:?}", id);
                 }
                 AssetEvent::Unused { id } => {
-                    if let Some(file) = lua_files.get(*id) {
-                        println!("Unused: {:?}", file);
-                    }
+                    println!("Unused: {:?}", id);
                 }
                 AssetEvent::LoadedWithDependencies { id } => {
-                    if let Some(file) = lua_files.get(*id) {
-                        println!("LoadedWithDependencies: {:?}", file);
-                    }
+                    println!("LoadedWithDependencies: {:?}", id);
                 }
             }
         }
@@ -138,7 +123,7 @@ struct LuaVm {
 }
 
 impl FromWorld for LuaScriptLoader {
-    fn from_world(world: &mut World) -> Self {
+    fn from_world(_world: &mut World) -> Self {
         LuaScriptLoader
     }
 }
@@ -148,7 +133,6 @@ impl FromWorld for LuaScriptLoader {
 enum LuaScriptLoaderError {
     #[error("Could not load file: {0}")]
     Io(#[from] std::io::Error),
-    // LuaError(rlua::Error),
 }
 
 impl AssetLoader for LuaScriptLoader {
