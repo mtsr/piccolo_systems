@@ -2,7 +2,7 @@ use bevy::{
     asset::{io::Reader, AssetLoader, LoadContext},
     ecs::system::{ParamBuilder, SystemState},
     prelude::*,
-    utils::{HashMap, HashSet},
+    utils::HashSet,
 };
 
 use piccolo::{Closure, Executor, Lua};
@@ -15,7 +15,8 @@ fn main() {
         ..default()
     }));
 
-    app.add_systems(PreUpdate, update_lua_systems);
+    app.add_systems(Startup, setup)
+        .add_systems(PreUpdate, update_lua_systems);
 
     app.init_asset::<LuaFile>();
     app.init_asset_loader::<LuaScriptLoader>();
@@ -23,26 +24,18 @@ fn main() {
     let lua = Lua::full();
     app.insert_non_send_resource(LuaVm { lua });
 
-    app.init_resource::<LuaSystems>();
+    app.init_resource::<LuaFiles>();
 
     app.run();
 }
 
-#[derive(Debug, Resource)]
-struct LuaSystems {
-    files: HashMap<AssetId<LuaFile>, Handle<LuaFile>>,
+#[derive(Debug, Default, Resource)]
+struct LuaFiles {
+    files: Vec<Handle<LuaFile>>,
 }
 
-impl FromWorld for LuaSystems {
-    fn from_world(world: &mut World) -> Self {
-        println!("FromWorld LuaSystems");
-
-        let asset_server = world.get_resource::<AssetServer>().unwrap();
-        let mut systems = HashMap::new();
-        let handle = asset_server.load("test.lua");
-        systems.insert(handle.id(), handle);
-        LuaSystems { files: systems }
-    }
+fn setup(mut lua_files: ResMut<LuaFiles>, asset_server: Res<AssetServer>) {
+    lua_files.files.push(asset_server.load("test.lua"));
 }
 
 fn update_lua_systems(world: &mut World) {
