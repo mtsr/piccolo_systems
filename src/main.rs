@@ -29,11 +29,6 @@ fn main() {
     app.run();
 }
 
-#[derive(Debug, Default, Resource)]
-struct LuaFiles {
-    files: Vec<Handle<LuaFile>>,
-}
-
 fn setup(mut lua_files: ResMut<LuaFiles>, asset_server: Res<AssetServer>) {
     lua_files.files.push(asset_server.load("test.lua"));
 }
@@ -104,16 +99,21 @@ fn update_lua_systems(world: &mut World) {
     }
 }
 
+struct LuaVm {
+    lua: Lua,
+}
+
 #[derive(Asset, Clone, TypePath, Debug)]
 struct LuaFile {
     bytes: Vec<u8>,
 }
 
-struct LuaScriptLoader;
-
-struct LuaVm {
-    lua: Lua,
+#[derive(Debug, Default, Resource)]
+struct LuaFiles {
+    files: Vec<Handle<LuaFile>>,
 }
+
+struct LuaScriptLoader;
 
 impl FromWorld for LuaScriptLoader {
     fn from_world(_world: &mut World) -> Self {
